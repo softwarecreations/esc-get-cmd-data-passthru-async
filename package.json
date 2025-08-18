@@ -14,8 +14,23 @@
     "url": "git+https://github.com/softwarecreations/esc-get-cmd-data-passthru-async.git"
   },
   "keywords": [
-    "minimal-dependencies",
-    "simple"
+    "no-dependencies",
+    "simple",
+    "spawn",
+    "child_process",
+    "command",
+    "exec",
+    "stdout",
+    "stderr",
+    "filter",
+    "capture",
+    "utilities",
+    "async",
+    "promise",
+    "nodejs",
+    "shell",
+    "realtime-output-passthrough",
+    "passthru"
   ],
   "author": "softwarecreations",
   "license": "MIT",
