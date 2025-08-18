@@ -6,9 +6,9 @@ Run any shell command, get promise resolving/rejecting (or only resolving) with
 * Arrays of stdout/stderr
 
 Optional
-* Line positive/negative filtering [ function / string / regex ]
-* Data-extraction/transformation [ function / regex ]
-* Realtime pass-through (user can see cmd progress)
+* Line filtering - positive/negative - using a [ function / string / regex ]
+* Data-extraction/transformation - using a [ function / regex ]
+* Pass-thru stdout/stderr (user can see cmd progress live)
 * Error handling, however you want
 
 ## Not for interactive commands (eg: nano)
@@ -110,13 +110,15 @@ A Promise resolving to:
 
 ## Features
 
-- **No dependencies**: Simple, fast, small, no bloat.
+- **No dependencies**: Simple, fast, no bloat.
+- **Small**: Only 4k of code
 - **Stable API**: No breaking changes will ever be made.
 - **Passthrough**: See output live by default, or disable for silent/asynchronous capture.
 - **Filtering/Mapping**: Pick or modify output lines with strings, RegExp, or functions.
 - **Great for automation**: User can watch progress, calling script gets all of the data output.
-- **No BS**: Get only the data that you need
+- **No noise**: Get only the data that you need
 - **Flexible Environment**: Pass custom env variables, cwd, etc.
+- **Powerful**: Get shit done!
 
 ## Typical Scenarios
 
