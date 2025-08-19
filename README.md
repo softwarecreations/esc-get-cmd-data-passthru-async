@@ -11,9 +11,16 @@ Optional
 * Pass-thru stdout/stderr (user can see cmd progress live)
 * Error handling, however you want
 
-## Not for interactive commands (eg: nano)
+## My other NPM modules for running commands
 
-For interactive commands, use: [esc-get-interactive-cmd-result-async](https://www.npmjs.com/package/esc-get-interactive-cmd-result-async)
+### Interactive (run and use nano/vim/installers/htop etc)
+
+[esc-get-interactive-cmd-result-async](https://www.npmjs.com/package/esc-get-interactive-cmd-result-async)
+
+### Capture stdout or get custom arrays on error afterwards
+
+[esc-get-cmd-stdout-array-promise](https://www.npmjs.com/package/esc-get-cmd-stdout-array-promise)
+
 
 ## Install
 
