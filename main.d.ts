@@ -18,8 +18,10 @@ export interface GetCmdDataOptions {                                 // Options 
  * @param optionsO - Additional execution/filtering options.
  * @returns Promise that resolves with [exitCode, stdoutLines, stderrLines], or rejects similarly (unless rejectOnError is false).
  */
-export function getCmdDataP(
+export declare function getCmdDataP(
   cmd: string,
   argsA?: string[],
   optionsO?: GetCmdDataOptions
 ): Promise<[number, string[], string[]]>;
+
+export default getCmdDataP;
