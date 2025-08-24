@@ -1,12 +1,13 @@
-export interface GetCmdDataOptions {
-  passthru?: boolean;
-  filterOnly?: ((line: string) => boolean) | RegExp | string | null;
-  filterNot?: ((line: string) => boolean) | RegExp | string | null;
-  capture?: ((line: string) => string) | RegExp | null;
-  verbosity?: number;
-  env?: { [key: string]: string | undefined };
-  rejectOnError?: boolean;
-  [key: string]: any;
+export interface GetCmdDataOptions {                                 // Options for getCmdDataP command execution/filtering
+  passthru?: boolean;                                                // Passthrough stdout/stderr to parent process's stdout/stderr
+  filterOnly?: ((line: string) => boolean) | RegExp | string | null; // Only include lines that match this filter (function/regex/string/null)
+  filterNot?: ((line: string) => boolean) | RegExp | string | null;  // Exclude lines that match this filter (function/regex/string/null)
+  capture?: ((line: string) => string) | RegExp | null;              // Map/transform lines before collecting (function/regex/null)
+  until?: ((lines: string[]) => boolean) | RegExp | string | null;   // Kill/stop when this matches until(linesA) is truthy for stdout/stderr or any line matches until regex/string
+  verbosity?: number;                                                // Control log output (0-3: silent/errors/commands/success)
+  env?: { [key: string]: string | undefined };                       // Additional environment variables
+  rejectOnError?: boolean;                                           // If true (default), promise rejects on nonzero exit code or error
+  [key: string]: any;                                                // Any other spawn options
 }
 
 /**

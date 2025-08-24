@@ -1,6 +1,6 @@
 {
   "name": "esc-get-cmd-data-passthru-async",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "async function that runs a shell command with arguments and environment variables, optional realtime passthru output/error. Positive/negative filter/map output with func/string/regex. Resolves/rejects with an array: [ retCode, outA, errA ]",
   "main": "main.mjs",
   "dependencies": {
@@ -30,7 +30,8 @@
     "nodejs",
     "shell",
     "realtime-output-passthrough",
-    "passthru"
+    "passthru",
+    "early-exit"
   ],
   "author": "softwarecreations",
   "license": "MIT",

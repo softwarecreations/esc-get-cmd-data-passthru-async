@@ -67,23 +67,29 @@ import { getCmdDataP } from 'esc-get-cmd-data-passthru-async';
 ### Silly one line examples
 
 ```js
-const [ retCode, outA, errA ] = await runP('apt', ['update'], { capture:/https?:\/\/[^ ]+/ }); // get only the apt URL's
+const [ retCode, outA, errA ] = await getCmdDataP('apt', ['update'], { capture:/https?:\/\/[^ ]+/ }); // get only the apt URL's
 ```
 
 ```js
-const [ retCode, outA, errA ] = await runP('apt', ['update'], { filterOnly:'Hit', filterNot:'debian.org/' }); // Only get the lines containing Hit, but not the debian.org related lines.
+const [ retCode, outA, errA ] = await getCmdDataP('apt', ['update'], { filterOnly:'Hit', filterNot:'debian.org/' }); // Only get the lines containing Hit, but not the debian.org related lines.
 ```
 
 ```js
-const [ retCode, outA, errA ] = await runP('apt', ['update'], { filterOnly:/(E|Err):/ }); // get only the apt URL's
+const [ retCode, outA, errA ] = await getCmdDataP('apt', ['update'], { filterOnly:/(E|Err):/ }); // get only the apt URL's
 ```
 
 ```js
-const [ retCode, outA, errA ] = await runP('df', ['-h'], { filterOnly:/(^Filesystem | \/$)/ }); // Get the headings and only the root filesystem's stats
+const [ retCode, outA, errA ] = await getCmdDataP('df', ['-h'], { filterOnly:/(^Filesystem | \/$)/ }); // Get the headings and only the root filesystem's stats
 ```
 
 ```js
-const [ retCode, outA, errA ] = await runP('zfs', ['list','yourmom'], { filterNot:/^NAME / });
+const [ retCode, outA, errA ] = await getCmdDataP('zfs', ['list','yourmom'], { filterNot:/^NAME / });
+```
+
+Ping foo-pc with an interval of 0.5 seconds, timeout of 2 sec per ping, max 5 attempts, stop immediately when you get a reply, capture/return the milliseconds.
+
+```js
+    const [ retCode, outA, errA ] = await getCmdDataP('ping', ['-i', '0.5', '-W', '2', '-c', '5', 'foo-pc'], { capture:/bytes from.+time=([\d.]+)/, until:'bytes from' });
 ```
 
 ## API
@@ -96,12 +102,23 @@ const [ retCode, outA, errA ] = await runP('zfs', ['list','yourmom'], { filterNo
   - **passthru**: _Boolean_ (default: true) – Print stdout/stderr to terminal live.
   - **filterOnly**: _Function/RegExp/String_ – Include only lines matching this.
   - **filterNot**:  _Function/RegExp/String_ – Exclude lines matching this.
-  - **capture**:    _Function/RegExp_ – Map/transforms each line before collecting.
+  - **capture**:    _Function/RegExp_        – Map/transforms each line before collecting.
+  - **until**:      _Function/RegExp/String_ – Stop (kill process) once a match is seen:  
+    - Function: receives all new output lines, stop if returns truthy  
+    - String: stop if any new line includes it  
+    - RegExp: stop if any new line matches  
   - **verbosity**:  _0-3_ (default:3) – Control log output:
     - 0:silent, 1:errors, 2:show commands, 3:show success
   - **env**:        _Object_ – Extra environment variables (merged with `process.env`).
   - **spawnO**:     _Object_ – Additional options for [`child_process.spawn`](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options).
   - **rejectOnError**: _Boolean_ (default:true) – Rejects promise on error/exit code != 0. If false, always resolves.
+
+#### Capture groups in `capture` regex
+* If you have no capture groups, you get the whole match.
+* If you have 1 capture group, you get what you captured.
+* If you have 2+ capture groups, you get an array of your captures
+
+Your capture groups should (_not_)? be optional. If you make them optional you will have to deal with a varying output format caused by your 🐂💩 regex.
 
 #### Returns
 
@@ -118,7 +135,7 @@ A Promise resolving to:
 ## Features
 
 - **No dependencies**: Simple, fast, no bloat.
-- **Small**: Only 4k of code
+- **Small**: Only 6k of code
 - **Stable API**: No breaking changes will ever be made.
 - **Passthrough**: See output live by default, or disable for silent/asynchronous capture.
 - **Filtering/Mapping**: Pick or modify output lines with strings, RegExp, or functions.

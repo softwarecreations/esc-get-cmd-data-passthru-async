@@ -3,24 +3,28 @@ import { spawn } from 'child_process';
 /**
  * Executes a command as a child process and processes its stdout/stderr output with optional filtering.
  * 
- * @param {string}                  cmd                          - The command to run.
- * @param {Array<string>}           argsA                        - Array of arguments to pass to the command.
- * @param {Object}                  optionsO                     - Options for command execution and output filtering.
- * @param {boolean}                [optionsO.passthru=true]      - If true, passthrough stdout/stderr to parent.
- * @param {Function|RegExp|string} [optionsO.filterOnly=Boolean] - Only include lines matching this filter function/regex/string
- * @param {         RegExp|string} [optionsO.filterNot =null   ] -      Exclude lines matching this filter          regex/string
- * @param {Function|RegExp|null}   [optionsO.capture   =null   ] - Map lines with this function / regex
- * @param {number}                 [optionsO.verbosity=3]        - Verbosity: 0=silent, 1=errors, 2=commands, 3=success.
- * @param {Object}                 [optionsO.env={}]             - Environment variables to add/override.
- * @param {Object}                 [optionsO.spawnO]             - Additional options for child_process.spawn.
- * @param {boolean}                [optionsO.rejectOnError=true] - If true (default), promise rejects on nonzero exit/error. If false, always resolves. 
+ * @param {string}                       cmd                          - The command to run.
+ * @param {Array<string>}                argsA                        - Array of arguments to pass to the command.
+ * @param {Object}                       optionsO                     - Options for command execution and output filtering.
+ * @param {boolean}                     [optionsO.passthru=true]      - If true, passthrough stdout/stderr to parent.
+ * @param {Function|RegExp|string|null} [optionsO.filterOnly=Boolean] - Only include lines matching this filter function/regex/string
+ * @param {         RegExp|string|null} [optionsO.filterNot =null   ] -      Exclude lines matching this filter          regex/string
+ * @param {Function|RegExp|       null} [optionsO.capture   =null   ] - Map lines with this function / regex
+ * @param {Function|RegExp|string|null} [optionsO.until     =null   ] - Stop (kill child) once a match is seen. Function (linesA), string (line includes), or regex (match).
+ * @param {number}                      [optionsO.verbosity=3]        - Verbosity: 0=silent, 1=errors, 2=commands, 3=success.
+ * @param {Object}                      [optionsO.env={}]             - Environment variables to add/override.
+ * @param {Object}                      [optionsO.spawnO]             - Additional options for child_process.spawn.
+ * @param {boolean}                     [optionsO.rejectOnError=true] - If true (default), promise rejects on nonzero exit/error. If false, always resolves. 
  * 
  * @returns {Promise<[number, Array<string>, Array<string>]>} - Resolves with [exitCode, stdoutLines, stderrLines],
  *   rejects with [exitCode, stdoutLines, stderrLines] on error.
  */
 
 export const getCmdDataP = ( cmd, argsA=[], optionsO={} ) => {
-  const { passthru=true, filterOnly=Boolean, filterNot=null, capture=null, verbosity=3, env={}, rejectOnError=true, ...spawnO } = optionsO;
+  if (typeof cmd!=='string') throw new Error("Expected 1st parameter to be a string, eg: 'ping'");
+  if (!Array.isArray(argsA)) throw new Error("Expected 2nd parameter to be an array, eg: ['-c', '5', 'google.com']");
+  if (optionsO===null || typeof optionsO!=='object' || optionsO.constructor.name!=='Object') throw new Error('Expected 3rd parameter to be an object');
+  const { passthru=true, filterOnly=Boolean, filterNot=null, capture=null, until=null, verbosity=3, env={}, rejectOnError=true, ...spawnO } = optionsO;
   const envO = { ...process.env, ...env };
   const cmdStr = `${cmd} ${argsA.join(' ')}`;
   if (verbosity >= 2) console.log('Will run', env, cmdStr);
@@ -30,19 +34,32 @@ export const getCmdDataP = ( cmd, argsA=[], optionsO={} ) => {
     const child = spawn(cmd, argsA, { ...spawnO, env:envO });
 
     const outA = [], errA = [];
+    let tmrUntil = 0;
 
     const getLinesA = data => {
       let linesA = data.toString().split(/\r?\n/);
-      if (     typeof capture==='function'        ) linesA = linesA.map( capture );
-      else if (       capture instanceof RegExp   ) linesA = linesA.map( line => {
+      if      (typeof until==='function'      && until(linesA)                                     || // if until(linesA) returns truthy      , we stop
+               typeof until==='string'        &&       linesA.some( line => line.includes(until) ) || // if any line contains the until string, we stop
+                      until instanceof RegExp &&       linesA.some( line => until.test(line) )        // if any line matches  the until regex , we stop
+      ) tmrUntil = setTimeout( () => child.kill() );
+      
+      if      (typeof capture==='function'        ) linesA = linesA.map( capture ); // if capture is a function we accept whatever string it returns for each line
+      else if (       capture instanceof RegExp   ) linesA = linesA.map( line => {  // if capture is regex we use the first regex match for each line
         const matchA = line.match(capture);
-        return matchA!==null ? matchA[0] : '';
+        if (matchA===null) return '';
+        switch (matchA.length) {
+          case  1: return matchA[0];
+          case  2: return matchA[1];
+          default: return matchA.slice(1);
+        }
       });
-      if      (typeof filterOnly==='function'     ) linesA = linesA.filter( filterOnly );
-      else if (typeof filterOnly==='string'       ) linesA = linesA.filter( line => line.includes(filterOnly) );
-      else if (       filterOnly instanceof RegExp) linesA = linesA.filter( line => filterOnly.test(line) );
-      if      (typeof filterNot==='string'        ) linesA = linesA.filter( line => !line.includes(filterNot) );
-      else if (       filterNot instanceof RegExp ) linesA = linesA.filter( line => !filterNot.test(line) );
+      
+      if      (typeof filterOnly==='function'     ) linesA = linesA.filter( filterOnly );                        // if filterOnly is a function, we only keep the lines that it returns truthy for
+      else if (typeof filterOnly==='string'       ) linesA = linesA.filter( line => line.includes(filterOnly) ); // if filterOnly is a string, we only keep lines that contain filterOnly
+      else if (       filterOnly instanceof RegExp) linesA = linesA.filter( line => filterOnly.test(line) );     // if filterOnly is a regex,  we only keep lines that match   filterOnly
+      
+      if      (typeof filterNot==='string'        ) linesA = linesA.filter( line => !line.includes(filterNot) ); // if filterNot is a string, we only keep lines that do not contain filterNot
+      else if (       filterNot instanceof RegExp ) linesA = linesA.filter( line => !filterNot.test(line) );     // if filterNot is a regex,  we only keep lines that do not match   filterNot
       return linesA;
     };
 
@@ -64,7 +81,7 @@ export const getCmdDataP = ( cmd, argsA=[], optionsO={} ) => {
     child.on('close', code => {
       if (outA.length!==0 && outA[outA.length - 1].length===0) outA.pop(); // remove empty last line
       if (errA.length!==0 && errA[errA.length - 1].length===0) errA.pop(); // remove empty last line
-      if (code === 0) {
+      if (code===0 || tmrUntil!==0) {
         if (verbosity >= 3) console.log(`The command succeeded: ${cmdStr}`);
         resolveF( [ 0, outA, errA ] );
       } else {
@@ -74,3 +91,5 @@ export const getCmdDataP = ( cmd, argsA=[], optionsO={} ) => {
     });
   });
 };
+
+export default getCmdDataP;
